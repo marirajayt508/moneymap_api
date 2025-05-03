@@ -32,7 +32,27 @@ router.get('/month/:monthId', authenticateToken, async (req, res) => {
     
     if (error) throw error;
     
-    res.json(data);
+    // Add indicator to each expense
+    const expensesWithIndicator = data.map(expense => {
+      const amountSpent = parseFloat(expense.amount_spent);
+      const allocatedBudget = parseFloat(expense.allocated_budget);
+      let indicator;
+      
+      if (amountSpent <= allocatedBudget * 0.7) {
+        indicator = 'good'; // Spent less than 70% of allocated budget
+      } else if (amountSpent <= allocatedBudget) {
+        indicator = 'average'; // Spent between 70% and 100% of allocated budget
+      } else {
+        indicator = 'reached'; // Spent more than allocated budget
+      }
+      
+      return {
+        ...expense,
+        indicator
+      };
+    });
+    
+    res.json(expensesWithIndicator);
   } catch (error) {
     console.error('Error fetching expenses:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -62,7 +82,26 @@ router.get('/date/:date', authenticateToken, async (req, res) => {
       return res.status(404).json({ message: 'No expense record found for this date' });
     }
     
-    res.json(data);
+    // Calculate spending indicator
+    let indicator;
+    const amountSpent = parseFloat(data.amount_spent);
+    const allocatedBudget = parseFloat(data.allocated_budget);
+    
+    if (amountSpent <= allocatedBudget * 0.7) {
+      indicator = 'good'; // Spent less than 70% of allocated budget
+    } else if (amountSpent <= allocatedBudget) {
+      indicator = 'average'; // Spent between 70% and 100% of allocated budget
+    } else {
+      indicator = 'reached'; // Spent more than allocated budget
+    }
+    
+    // Add indicator to response
+    const response = {
+      ...data,
+      indicator
+    };
+    
+    res.json(response);
   } catch (error) {
     console.error('Error fetching expense:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -157,7 +196,26 @@ router.post('/',
       
       if (result.error) throw result.error;
       
-      res.status(201).json(result.data[0]);
+      // Add indicator to response
+      const expense = result.data[0];
+      const expenseAmount = parseFloat(expense.amount_spent);
+      const expenseBudget = parseFloat(expense.allocated_budget);
+      let indicator;
+      
+      if (expenseAmount <= expenseBudget * 0.7) {
+        indicator = 'good'; // Spent less than 70% of allocated budget
+      } else if (expenseAmount <= expenseBudget) {
+        indicator = 'average'; // Spent between 70% and 100% of allocated budget
+      } else {
+        indicator = 'reached'; // Spent more than allocated budget
+      }
+      
+      const response = {
+        ...expense,
+        indicator
+      };
+      
+      res.status(201).json(response);
     } catch (error) {
       console.error('Error recording expense:', error);
       res.status(500).json({ message: 'Server error', error: error.message });
@@ -235,7 +293,26 @@ router.put('/:id',
           .eq('id', nextDayExpense.id);
       }
       
-      res.json(data[0]);
+      // Add indicator to response
+      const updatedExpense = data[0];
+      const expenseAmount = parseFloat(updatedExpense.amount_spent);
+      const expenseBudget = parseFloat(updatedExpense.allocated_budget);
+      let indicator;
+      
+      if (expenseAmount <= expenseBudget * 0.7) {
+        indicator = 'good'; // Spent less than 70% of allocated budget
+      } else if (expenseAmount <= expenseBudget) {
+        indicator = 'average'; // Spent between 70% and 100% of allocated budget
+      } else {
+        indicator = 'reached'; // Spent more than allocated budget
+      }
+      
+      const response = {
+        ...updatedExpense,
+        indicator
+      };
+      
+      res.json(response);
     } catch (error) {
       console.error('Error updating expense:', error);
       res.status(500).json({ message: 'Server error', error: error.message });

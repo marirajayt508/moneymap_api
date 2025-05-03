@@ -16,7 +16,7 @@ router.get('/:month/:year', authenticateToken, async (req, res) => {
       .eq('user_id', userId)
       .eq('month', month)
       .eq('year', year)
-      .single();
+      .maybeSingle();
     
     if (error) {
       console.error('Error fetching month data:', error);
@@ -64,7 +64,7 @@ router.post('/',
       .eq('user_id', userId)
       .eq('month', month)
       .eq('year', year)
-      .single();
+      .maybeSingle();
       
     if (monthError) {
       console.error('Error checking for existing month:', monthError);
@@ -93,7 +93,7 @@ router.post('/',
         .from('users')
         .select('id')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
         
       if (userCheckError || !existingUser) {
         // User doesn't exist in the users table or error occurred, create them

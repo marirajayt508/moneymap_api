@@ -22,25 +22,115 @@ router.get('/monthly/:month/:year',
       const userId = req.user.id;
       const supabaseAdmin = req.app.locals.supabaseAdmin;
       
-      // Call the stored function to get monthly summary
-      const { data, error } = await supabaseAdmin.rpc('get_monthly_summary', {
+      // Try to call the stored function first
+      const { data: rpcData, error: rpcError } = await supabaseAdmin.rpc('get_monthly_summary', {
         p_user_id: userId,
         month_num: parseInt(month),
         year_num: parseInt(year)
       });
       
-      if (error) throw error;
+      // If the stored function works, use its data
+      if (!rpcError && rpcData && (
+        parseFloat(rpcData.total_income) > 0 || 
+        parseFloat(rpcData.total_savings) > 0 || 
+        parseFloat(rpcData.total_spent) > 0
+      )) {
+      // Format the response
+      const report = {
+        month: parseInt(month),
+        year: parseInt(year),
+        totalIncome: parseFloat(rpcData.total_income || 0),
+        totalSavings: parseFloat(rpcData.total_savings || 0),
+        totalSpent: parseFloat(rpcData.total_spent || 0),
+        totalDailyAllocation: parseFloat(rpcData.total_daily_allocation || 0),
+        totalRemaining: parseFloat(rpcData.total_remaining || 0),
+        extraSavings: parseFloat(rpcData.cumulative_savings || 0),
+        perdayLimit: parseFloat(rpcData.total_daily_allocation || 0) / (new Date(parseInt(year), parseInt(month), 0).getDate()) // Use actual days in month
+      };
+        
+        return res.json(report);
+      }
+      
+      // If the stored function fails or returns all zeros, calculate the data directly
+      console.log('Calculating monthly summary directly...');
+      
+      // Get month data
+      const { data: monthData, error: monthError } = await supabaseAdmin
+        .from('months')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('month', month)
+        .eq('year', year)
+        .maybeSingle();
+      
+      if (monthError) throw monthError;
+      
+      if (!monthData) {
+        return res.json({
+          month: parseInt(month),
+          year: parseInt(year),
+          totalIncome: 0,
+          totalSavings: 0,
+          totalSpent: 0,
+          totalDailyAllocation: 0,
+          totalRemaining: 0,
+          extraSavings: 0,
+          perdayLimit: 0
+        });
+      }
+      
+      // Get total savings from budget categories
+      const { data: savingsCategories, error: savingsError } = await supabaseAdmin
+        .from('budget_categories')
+        .select('amount')
+        .eq('month_id', monthData.id)
+        .eq('user_id', userId)
+        .eq('type', 'Savings');
+      
+      if (savingsError) throw savingsError;
+      
+      // Get total spent from budget categories
+      const { data: spentCategories, error: spentError } = await supabaseAdmin
+        .from('budget_categories')
+        .select('amount')
+        .eq('month_id', monthData.id)
+        .eq('user_id', userId)
+        .eq('type', 'Spent');
+      
+      if (spentError) throw spentError;
+      
+      // Get the last day's expense to get cumulative savings
+      const { data: lastDayExpense, error: expenseError } = await supabaseAdmin
+        .from('daily_expenses')
+        .select('remaining')
+        .eq('month_id', monthData.id)
+        .eq('user_id', userId)
+        .order('date', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      
+      if (expenseError) throw expenseError;
+      
+      // Calculate totals
+      const totalIncome = parseFloat(monthData.income) || 0;
+      const totalSavings = savingsCategories.reduce((sum, cat) => sum + parseFloat(cat.amount), 0);
+      const totalSpent = spentCategories.reduce((sum, cat) => sum + parseFloat(cat.amount), 0);
+      const totalDailyAllocation = parseFloat(monthData.daily_allocation) * monthData.days_in_month;
+      const totalRemaining = parseFloat(monthData.balance_amount) || 0;
+      const extraSavings = lastDayExpense ? parseFloat(lastDayExpense.remaining) : 0;
+      const perdayLimit = monthData.days_in_month > 0 ? totalDailyAllocation / monthData.days_in_month : 0;
       
       // Format the response
       const report = {
         month: parseInt(month),
         year: parseInt(year),
-        totalIncome: parseFloat(data?.total_income || 0),
-        totalSavings: parseFloat(data?.total_savings || 0),
-        totalSpent: parseFloat(data?.total_spent || 0),
-        totalDailyAllocation: parseFloat(data?.total_daily_allocation || 0),
-        totalRemaining: parseFloat(data?.total_remaining || 0),
-        cumulativeSavings: parseFloat(data?.cumulative_savings || 0)
+        totalIncome,
+        totalSavings,
+        totalSpent,
+        totalDailyAllocation,
+        totalRemaining,
+        extraSavings,
+        perdayLimit
       };
       
       res.json(report);
