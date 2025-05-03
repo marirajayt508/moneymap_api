@@ -8,22 +8,22 @@ router.get('/month/:monthId', authenticateToken, async (req, res) => {
   try {
     const { monthId } = req.params;
     const userId = req.user.id;
-    const supabase = req.app.locals.supabase;
+    const supabaseAdmin = req.app.locals.supabaseAdmin;
     
     // First verify the month belongs to the user
-    const { data: month, error: monthError } = await supabase
+    const { data: month, error: monthError } = await supabaseAdmin
       .from('months')
       .select('id')
       .eq('id', monthId)
       .eq('user_id', userId)
-      .single();
+      .maybeSingle();
     
     if (monthError || !month) {
       return res.status(404).json({ message: 'Month not found or access denied' });
     }
     
     // Get expenses
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('daily_expenses')
       .select('*')
       .eq('month_id', monthId)
@@ -44,15 +44,15 @@ router.get('/date/:date', authenticateToken, async (req, res) => {
   try {
     const { date } = req.params;
     const userId = req.user.id;
-    const supabase = req.app.locals.supabase;
+    const supabaseAdmin = req.app.locals.supabaseAdmin;
     
     // Get expense for the date
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('daily_expenses')
       .select('*')
       .eq('date', date)
       .eq('user_id', userId)
-      .single();
+      .maybeSingle();
     
     if (error && error.code !== 'PGRST116') { // PGRST116 is "No rows returned" error
       throw error;
@@ -87,33 +87,33 @@ router.post('/',
     try {
       const { monthId, date, amountSpent } = req.body;
       const userId = req.user.id;
-      const supabase = req.app.locals.supabase;
+      const supabaseAdmin = req.app.locals.supabaseAdmin;
       
       // First verify the month belongs to the user and get daily allocation
-      const { data: month, error: monthError } = await supabase
+      const { data: month, error: monthError } = await supabaseAdmin
         .from('months')
         .select('daily_allocation')
         .eq('id', monthId)
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
       
       if (monthError || !month) {
         return res.status(404).json({ message: 'Month not found or access denied' });
       }
       
       // Check if an expense record already exists for this date
-      const { data: existingExpense } = await supabase
+      const { data: existingExpense } = await supabaseAdmin
         .from('daily_expenses')
         .select('id')
         .eq('user_id', userId)
         .eq('date', date)
-        .single();
+        .maybeSingle();
       
       let result;
       
       if (existingExpense) {
         // Update existing expense
-        result = await supabase
+        result = await supabaseAdmin
           .from('daily_expenses')
           .update({ 
             amount_spent: amountSpent,
@@ -127,19 +127,19 @@ router.post('/',
         prevDate.setDate(prevDate.getDate() - 1);
         const formattedPrevDate = prevDate.toISOString().split('T')[0];
         
-        const { data: prevDayExpense } = await supabase
+        const { data: prevDayExpense } = await supabaseAdmin
           .from('daily_expenses')
           .select('remaining')
           .eq('user_id', userId)
           .eq('date', formattedPrevDate)
-          .single();
+          .maybeSingle();
         
         const cumulativeSavings = prevDayExpense ? parseFloat(prevDayExpense.remaining) : 0;
         const cumulativeBudget = parseFloat(month.daily_allocation) + cumulativeSavings;
         const remaining = cumulativeBudget - parseFloat(amountSpent);
         
-        // Create new expense record
-        result = await supabase
+        // Create new expense record with calculated values
+        result = await supabaseAdmin
           .from('daily_expenses')
           .insert([{
             user_id: userId,
@@ -147,9 +147,10 @@ router.post('/',
             date,
             amount_spent: amountSpent,
             allocated_budget: month.daily_allocation,
+            // Calculate and set these values directly instead of relying on the trigger
             cumulative_savings: cumulativeSavings,
             cumulative_budget: cumulativeBudget,
-            remaining
+            remaining: remaining
           }])
           .select();
       }
@@ -182,15 +183,15 @@ router.put('/:id',
       const { id } = req.params;
       const { amountSpent } = req.body;
       const userId = req.user.id;
-      const supabase = req.app.locals.supabase;
+      const supabaseAdmin = req.app.locals.supabaseAdmin;
       
       // First verify the expense belongs to the user and get current values
-      const { data: expense, error: expenseError } = await supabase
+      const { data: expense, error: expenseError } = await supabaseAdmin
         .from('daily_expenses')
         .select('*')
         .eq('id', id)
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
       
       if (expenseError || !expense) {
         return res.status(404).json({ message: 'Expense not found or access denied' });
@@ -200,7 +201,7 @@ router.put('/:id',
       const remaining = parseFloat(expense.cumulative_budget) - parseFloat(amountSpent);
       
       // Update expense
-      const { data, error } = await supabase
+      const { data, error } = await supabaseAdmin
         .from('daily_expenses')
         .update({ 
           amount_spent: amountSpent,
@@ -218,17 +219,17 @@ router.put('/:id',
       const formattedNextDate = nextDate.toISOString().split('T')[0];
       
       // Get the next day's expense if it exists
-      const { data: nextDayExpense } = await supabase
+      const { data: nextDayExpense } = await supabaseAdmin
         .from('daily_expenses')
         .select('id')
         .eq('user_id', userId)
         .eq('date', formattedNextDate)
-        .single();
+        .maybeSingle();
       
       // If next day expense exists, we need to recalculate its values
       if (nextDayExpense) {
         // This will trigger a cascade of updates due to the trigger_calculate_expense_values
-        await supabase
+        await supabaseAdmin
           .from('daily_expenses')
           .update({ updated_at: new Date() })
           .eq('id', nextDayExpense.id);
@@ -258,22 +259,22 @@ router.delete('/:id',
     try {
       const { id } = req.params;
       const userId = req.user.id;
-      const supabase = req.app.locals.supabase;
+      const supabaseAdmin = req.app.locals.supabaseAdmin;
       
       // First verify the expense belongs to the user
-      const { data: expense, error: expenseError } = await supabase
+      const { data: expense, error: expenseError } = await supabaseAdmin
         .from('daily_expenses')
         .select('date')
         .eq('id', id)
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
       
       if (expenseError || !expense) {
         return res.status(404).json({ message: 'Expense not found or access denied' });
       }
       
       // Delete expense
-      const { error } = await supabase
+      const { error } = await supabaseAdmin
         .from('daily_expenses')
         .delete()
         .eq('id', id);
@@ -285,7 +286,7 @@ router.delete('/:id',
       nextDate.setDate(nextDate.getDate() + 1);
       const formattedNextDate = nextDate.toISOString().split('T')[0];
       
-      const { data: nextDayExpense } = await supabase
+      const { data: nextDayExpense } = await supabaseAdmin
         .from('daily_expenses')
         .select('id')
         .eq('user_id', userId)
@@ -295,7 +296,7 @@ router.delete('/:id',
       // If next day expense exists, we need to recalculate its values
       if (nextDayExpense) {
         // This will trigger a cascade of updates due to the trigger_calculate_expense_values
-        await supabase
+        await supabaseAdmin
           .from('daily_expenses')
           .update({ updated_at: new Date() })
           .eq('id', nextDayExpense.id);

@@ -20,31 +20,27 @@ router.get('/monthly/:month/:year',
     try {
       const { month, year } = req.params;
       const userId = req.user.id;
-      const supabase = req.app.locals.supabase;
+      const supabaseAdmin = req.app.locals.supabaseAdmin;
       
       // Call the stored function to get monthly summary
-      const { data, error } = await supabase.rpc('get_monthly_summary', {
-        user_id: userId,
+      const { data, error } = await supabaseAdmin.rpc('get_monthly_summary', {
+        p_user_id: userId,
         month_num: parseInt(month),
         year_num: parseInt(year)
       });
       
       if (error) throw error;
       
-      if (!data) {
-        return res.status(404).json({ message: 'No data found for this month' });
-      }
-      
       // Format the response
       const report = {
         month: parseInt(month),
         year: parseInt(year),
-        totalIncome: parseFloat(data.total_income || 0),
-        totalSavings: parseFloat(data.total_savings || 0),
-        totalSpent: parseFloat(data.total_spent || 0),
-        totalDailyAllocation: parseFloat(data.total_daily_allocation || 0),
-        totalRemaining: parseFloat(data.total_remaining || 0),
-        cumulativeSavings: parseFloat(data.cumulative_savings || 0)
+        totalIncome: parseFloat(data?.total_income || 0),
+        totalSavings: parseFloat(data?.total_savings || 0),
+        totalSpent: parseFloat(data?.total_spent || 0),
+        totalDailyAllocation: parseFloat(data?.total_daily_allocation || 0),
+        totalRemaining: parseFloat(data?.total_remaining || 0),
+        cumulativeSavings: parseFloat(data?.cumulative_savings || 0)
       };
       
       res.json(report);
@@ -72,23 +68,23 @@ router.get('/trend/:month/:year',
     try {
       const { month, year } = req.params;
       const userId = req.user.id;
-      const supabase = req.app.locals.supabase;
+      const supabaseAdmin = req.app.locals.supabaseAdmin;
       
       // Get month ID
-      const { data: monthData, error: monthError } = await supabase
+      const { data: monthData, error: monthError } = await supabaseAdmin
         .from('months')
         .select('id')
         .eq('month', month)
         .eq('year', year)
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
       
       if (monthError || !monthData) {
         return res.status(404).json({ message: 'Month not found' });
       }
       
       // Get daily expenses
-      const { data: expenses, error: expensesError } = await supabase
+      const { data: expenses, error: expensesError } = await supabaseAdmin
         .from('daily_expenses')
         .select('date, amount_spent, allocated_budget, cumulative_savings, cumulative_budget, remaining')
         .eq('month_id', monthData.id)
@@ -132,23 +128,23 @@ router.get('/savings/:month/:year',
     try {
       const { month, year } = req.params;
       const userId = req.user.id;
-      const supabase = req.app.locals.supabase;
+      const supabaseAdmin = req.app.locals.supabaseAdmin;
       
       // Get month data
-      const { data: monthData, error: monthError } = await supabase
+      const { data: monthData, error: monthError } = await supabaseAdmin
         .from('months')
         .select('*')
         .eq('month', month)
         .eq('year', year)
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
       
       if (monthError || !monthData) {
         return res.status(404).json({ message: 'Month not found' });
       }
       
       // Get savings categories
-      const { data: savingsCategories, error: categoriesError } = await supabase
+      const { data: savingsCategories, error: categoriesError } = await supabaseAdmin
         .from('budget_categories')
         .select('name, amount')
         .eq('month_id', monthData.id)
@@ -159,14 +155,14 @@ router.get('/savings/:month/:year',
       if (categoriesError) throw categoriesError;
       
       // Get the last day's expense to get cumulative savings
-      const { data: lastDayExpense, error: expenseError } = await supabase
+      const { data: lastDayExpense, error: expenseError } = await supabaseAdmin
         .from('daily_expenses')
         .select('remaining')
         .eq('month_id', monthData.id)
         .eq('user_id', userId)
         .order('date', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
       
       // Format the response
       const totalPlannedSavings = savingsCategories.reduce((sum, cat) => sum + parseFloat(cat.amount), 0);
@@ -212,23 +208,23 @@ router.get('/spending/:month/:year',
     try {
       const { month, year } = req.params;
       const userId = req.user.id;
-      const supabase = req.app.locals.supabase;
+      const supabaseAdmin = req.app.locals.supabaseAdmin;
       
       // Get month data
-      const { data: monthData, error: monthError } = await supabase
+      const { data: monthData, error: monthError } = await supabaseAdmin
         .from('months')
         .select('*')
         .eq('month', month)
         .eq('year', year)
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
       
       if (monthError || !monthData) {
         return res.status(404).json({ message: 'Month not found' });
       }
       
       // Get spending categories
-      const { data: spendingCategories, error: categoriesError } = await supabase
+      const { data: spendingCategories, error: categoriesError } = await supabaseAdmin
         .from('budget_categories')
         .select('name, amount')
         .eq('month_id', monthData.id)
@@ -239,7 +235,7 @@ router.get('/spending/:month/:year',
       if (categoriesError) throw categoriesError;
       
       // Get total actual spending from daily expenses
-      const { data: totalSpending, error: spendingError } = await supabase
+      const { data: totalSpending, error: spendingError } = await supabaseAdmin
         .from('daily_expenses')
         .select('amount_spent')
         .eq('month_id', monthData.id)

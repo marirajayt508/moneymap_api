@@ -8,22 +8,22 @@ router.get('/month/:monthId', authenticateToken, async (req, res) => {
   try {
     const { monthId } = req.params;
     const userId = req.user.id;
-    const supabase = req.app.locals.supabase;
+    const supabaseAdmin = req.app.locals.supabaseAdmin;
     
     // First verify the month belongs to the user
-    const { data: month, error: monthError } = await supabase
+    const { data: month, error: monthError } = await supabaseAdmin
       .from('months')
       .select('id')
       .eq('id', monthId)
       .eq('user_id', userId)
-      .single();
+      .maybeSingle();
     
     if (monthError || !month) {
       return res.status(404).json({ message: 'Month not found or access denied' });
     }
     
     // Get budget categories
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('budget_categories')
       .select('*')
       .eq('month_id', monthId)
@@ -58,22 +58,22 @@ router.post('/',
     try {
       const { monthId, name, amount, type } = req.body;
       const userId = req.user.id;
-      const supabase = req.app.locals.supabase;
+      const supabaseAdmin = req.app.locals.supabaseAdmin;
       
       // First verify the month belongs to the user
-      const { data: month, error: monthError } = await supabase
+      const { data: month, error: monthError } = await supabaseAdmin
         .from('months')
         .select('id')
         .eq('id', monthId)
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
       
       if (monthError || !month) {
         return res.status(404).json({ message: 'Month not found or access denied' });
       }
       
       // Create budget category
-      const { data, error } = await supabase
+      const { data, error } = await supabaseAdmin
         .from('budget_categories')
         .insert([{
           user_id: userId,
@@ -114,15 +114,15 @@ router.put('/:id',
       const { id } = req.params;
       const { name, amount, type } = req.body;
       const userId = req.user.id;
-      const supabase = req.app.locals.supabase;
+      const supabaseAdmin = req.app.locals.supabaseAdmin;
       
       // First verify the category belongs to the user
-      const { data: category, error: categoryError } = await supabase
+      const { data: category, error: categoryError } = await supabaseAdmin
         .from('budget_categories')
         .select('id')
         .eq('id', id)
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
       
       if (categoryError || !category) {
         return res.status(404).json({ message: 'Category not found or access denied' });
@@ -136,7 +136,7 @@ router.put('/:id',
       updateData.updated_at = new Date();
       
       // Update budget category
-      const { data, error } = await supabase
+      const { data, error } = await supabaseAdmin
         .from('budget_categories')
         .update(updateData)
         .eq('id', id)
@@ -168,22 +168,22 @@ router.delete('/:id',
     try {
       const { id } = req.params;
       const userId = req.user.id;
-      const supabase = req.app.locals.supabase;
+      const supabaseAdmin = req.app.locals.supabaseAdmin;
       
       // First verify the category belongs to the user
-      const { data: category, error: categoryError } = await supabase
+      const { data: category, error: categoryError } = await supabaseAdmin
         .from('budget_categories')
         .select('id')
         .eq('id', id)
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
       
       if (categoryError || !category) {
         return res.status(404).json({ message: 'Category not found or access denied' });
       }
       
       // Delete budget category
-      const { error } = await supabase
+      const { error } = await supabaseAdmin
         .from('budget_categories')
         .delete()
         .eq('id', id);
@@ -203,22 +203,22 @@ router.get('/summary/:monthId', authenticateToken, async (req, res) => {
   try {
     const { monthId } = req.params;
     const userId = req.user.id;
-    const supabase = req.app.locals.supabase;
+    const supabaseAdmin = req.app.locals.supabaseAdmin;
     
     // First verify the month belongs to the user
-    const { data: month, error: monthError } = await supabase
+    const { data: month, error: monthError } = await supabaseAdmin
       .from('months')
       .select('*')
       .eq('id', monthId)
       .eq('user_id', userId)
-      .single();
+      .maybeSingle();
     
     if (monthError || !month) {
       return res.status(404).json({ message: 'Month not found or access denied' });
     }
     
     // Get budget categories grouped by type
-    const { data: categories, error: categoriesError } = await supabase
+    const { data: categories, error: categoriesError } = await supabaseAdmin
       .from('budget_categories')
       .select('*')
       .eq('month_id', monthId)

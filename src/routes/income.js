@@ -8,9 +8,9 @@ router.get('/:month/:year', authenticateToken, async (req, res) => {
   try {
     const { month, year } = req.params;
     const userId = req.user.id;
-    const supabase = req.app.locals.supabase;
+    const supabaseAdmin = req.app.locals.supabaseAdmin;
     
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('months')
       .select('*')
       .eq('user_id', userId)
@@ -18,7 +18,10 @@ router.get('/:month/:year', authenticateToken, async (req, res) => {
       .eq('year', year)
       .single();
     
-    if (error) throw error;
+    if (error) {
+      console.error('Error fetching month data:', error);
+      throw error;
+    }
     
     if (!data) {
       return res.status(404).json({ message: 'Month not found' });
@@ -49,25 +52,30 @@ router.post('/',
     try {
       const { month, year, income } = req.body;
       const userId = req.user.id;
-      const supabase = req.app.locals.supabase;
+      const supabaseAdmin = req.app.locals.supabaseAdmin;
       
       // Calculate days in month
       const daysInMonth = new Date(year, month, 0).getDate();
       
-      // Check if month record already exists
-      const { data: existingMonth } = await supabase
-        .from('months')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('month', month)
-        .eq('year', year)
-        .single();
+    // Check if month record already exists
+    const { data: existingMonth, error: monthError } = await supabaseAdmin
+      .from('months')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('month', month)
+      .eq('year', year)
+      .single();
+      
+    if (monthError) {
+      console.error('Error checking for existing month:', monthError);
+      throw monthError;
+    }
       
       let result;
       
       if (existingMonth) {
         // Update existing month
-        result = await supabase
+        result = await supabaseAdmin
           .from('months')
           .update({ 
             income,
@@ -77,22 +85,43 @@ router.post('/',
           .select();
           
         // Call the function to recalculate daily allocation
-        await supabase.rpc('calculate_daily_allocation', { month_id: existingMonth.id });
+        await supabaseAdmin.rpc('calculate_daily_allocation', { month_id: existingMonth.id });
       } else {
-        // Create new month
-        result = await supabase
-          .from('months')
-          .insert([{
-            user_id: userId,
-            month,
-            year,
-            income,
-            days_in_month: daysInMonth,
-            daily_allocation: 0, // Will be calculated by trigger
-            total_budgeted: 0,   // Will be calculated as budget categories are added
-            balance_amount: income // Will be updated by trigger
-          }])
-          .select();
+      // Create new month
+      // First, ensure the user exists in the users table
+      const { data: existingUser, error: userCheckError } = await supabaseAdmin
+        .from('users')
+        .select('id')
+        .eq('id', userId)
+        .single();
+        
+      if (userCheckError || !existingUser) {
+        // User doesn't exist in the users table or error occurred, create them
+        console.log('Creating new user record for ID:', userId);
+        const { error: userInsertError } = await supabaseAdmin
+          .from('users')
+          .insert([{ id: userId, name: req.user.user_metadata?.name || 'Demo User' }]);
+          
+        if (userInsertError) {
+          console.error('Error creating user record:', userInsertError);
+          throw userInsertError;
+        }
+      }
+      
+      // Now insert the month record
+      result = await supabaseAdmin
+        .from('months')
+        .insert([{
+          user_id: userId,
+          month,
+          year,
+          income,
+          days_in_month: daysInMonth,
+          daily_allocation: 0, // Will be calculated by trigger
+          total_budgeted: 0,   // Will be calculated as budget categories are added
+          balance_amount: income // Will be updated by trigger
+        }])
+        .select();
       }
       
       if (result.error) throw result.error;
@@ -109,9 +138,9 @@ router.post('/',
 router.get('/', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
-    const supabase = req.app.locals.supabase;
+    const supabaseAdmin = req.app.locals.supabaseAdmin;
     
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('months')
       .select('*')
       .eq('user_id', userId)

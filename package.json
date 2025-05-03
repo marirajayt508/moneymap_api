@@ -4,9 +4,12 @@
   "description": "Backend server for Expense Tracker application",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon index.js",
+    "start": "node --no-deprecation index.js",
+    "dev": "nodemon --no-deprecation index.js",
     "test": "jest"
+  },
+  "overrides": {
+    "punycode": "npm:@iamolegga/punycode@^1.0.0"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",
