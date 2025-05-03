@@ -1,0 +1,414 @@
+{
+  "info": {
+    "_postman_id": "a1b2c3d4-e5f6-g7h8-i9j0-k1l2m3n4o5p6",
+    "name": "Expense Tracker API",
+    "description": "A collection for testing the Expense Tracker API endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Authentication",
+      "description": "Authentication endpoints are handled by Supabase directly",
+      "item": []
+    },
+    {
+      "name": "Income",
+      "item": [
+        {
+          "name": "Get All Months",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/income",
+              "host": ["{{base_url}}"],
+              "path": ["api", "income"]
+            }
+          }
+        },
+        {
+          "name": "Get Income for Month",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/income/5/2025",
+              "host": ["{{base_url}}"],
+              "path": ["api", "income", "5", "2025"]
+            }
+          }
+        },
+        {
+          "name": "Create/Update Income",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"month\": 5,\n    \"year\": 2025,\n    \"income\": 50000\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/income",
+              "host": ["{{base_url}}"],
+              "path": ["api", "income"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Budget",
+      "item": [
+        {
+          "name": "Get Budget Categories",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/budget/month/{{month_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "budget", "month", "{{month_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Create Budget Category",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"monthId\": \"{{month_id}}\",\n    \"name\": \"Rent\",\n    \"amount\": 7100,\n    \"type\": \"Spent\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/budget",
+              "host": ["{{base_url}}"],
+              "path": ["api", "budget"]
+            }
+          }
+        },
+        {
+          "name": "Update Budget Category",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Rent\",\n    \"amount\": 7500,\n    \"type\": \"Spent\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/budget/{{category_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "budget", "{{category_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Budget Category",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/budget/{{category_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "budget", "{{category_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Budget Summary",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/budget/summary/{{month_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "budget", "summary", "{{month_id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Expenses",
+      "item": [
+        {
+          "name": "Get Month Expenses",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/expense/month/{{month_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "expense", "month", "{{month_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Date Expense",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/expense/date/2025-05-01",
+              "host": ["{{base_url}}"],
+              "path": ["api", "expense", "date", "2025-05-01"]
+            }
+          }
+        },
+        {
+          "name": "Record Expense",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"monthId\": \"{{month_id}}\",\n    \"date\": \"2025-05-01\",\n    \"amountSpent\": 100\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/expense",
+              "host": ["{{base_url}}"],
+              "path": ["api", "expense"]
+            }
+          }
+        },
+        {
+          "name": "Update Expense",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"amountSpent\": 150\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/expense/{{expense_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "expense", "{{expense_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Expense",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/expense/{{expense_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "expense", "{{expense_id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reports",
+      "item": [
+        {
+          "name": "Monthly Summary",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/report/monthly/5/2025",
+              "host": ["{{base_url}}"],
+              "path": ["api", "report", "monthly", "5", "2025"]
+            }
+          }
+        },
+        {
+          "name": "Expense Trend",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/report/trend/5/2025",
+              "host": ["{{base_url}}"],
+              "path": ["api", "report", "trend", "5", "2025"]
+            }
+          }
+        },
+        {
+          "name": "Savings Analysis",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/report/savings/5/2025",
+              "host": ["{{base_url}}"],
+              "path": ["api", "report", "savings", "5", "2025"]
+            }
+          }
+        },
+        {
+          "name": "Spending Analysis",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/report/spending/5/2025",
+              "host": ["{{base_url}}"],
+              "path": ["api", "report", "spending", "5", "2025"]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "event": [],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5000",
+      "type": "string"
+    },
+    {
+      "key": "jwt_token",
+      "value": "your_jwt_token_here",
+      "type": "string"
+    },
+    {
+      "key": "month_id",
+      "value": "your_month_id_here",
+      "type": "string"
+    },
+    {
+      "key": "category_id",
+      "value": "your_category_id_here",
+      "type": "string"
+    },
+    {
+      "key": "expense_id",
+      "value": "your_expense_id_here",
+      "type": "string"
+    }
+  ]
+}
