@@ -47,9 +47,19 @@ A comprehensive expense tracking application that helps you manage your monthly 
    JWT_SECRET=your_jwt_secret
    ```
 
-4. Run the setup script to initialize the database:
+4. Run the setup script to initialize the application:
    ```
    ./setup.sh
+   ```
+
+5. Initialize the database by running the SQL scripts in your Supabase SQL Editor:
+   - `src/config/supabase-schema.sql` - Creates tables and RLS policies
+   - `src/config/fix-functions.sql` - Fixes function ambiguities
+   - `src/config/bypass-rls-functions.sql` - Adds functions to bypass RLS for user creation
+
+   Alternatively, you can run the bypass RLS functions script:
+   ```
+   node apply-bypass-rls.js
    ```
 
 ### Running the Application
@@ -103,7 +113,35 @@ The application will be available at `http://localhost:5000`.
 5. **Cumulative Savings**: Unspent daily budget is added to the next day's allowance, creating a cumulative savings effect
 6. **Monthly Report**: At the end of the month, you get a comprehensive report of your income, expenses, and savings
 
+## Troubleshooting
+
+### Row-Level Security (RLS) Issues
+
+If you encounter errors related to row-level security policies, such as:
+```
+{
+    "message": "Server error",
+    "error": "new row violates row-level security policy for table \"users\""
+}
+```
+
+This is likely due to the RLS policies preventing the creation of new user records. To fix this:
+
+1. Make sure you've run the `src/config/bypass-rls-functions.sql` script in your Supabase SQL Editor or executed `node apply-bypass-rls.js`
+2. Verify that your Supabase service key has the correct permissions
+3. Check that the `supabaseAdmin` client is properly initialized with the service role key
+
+The application includes several mechanisms to bypass RLS when necessary:
+- Custom SQL functions with `SECURITY DEFINER` to bypass RLS
+- Properly configured Supabase admin client
+- Fallback mechanisms for user creation
+
+### Other Common Issues
+
+- **Database Connection Errors**: Verify your Supabase credentials in the `.env` file
+- **Missing Tables**: Ensure you've run all the SQL scripts mentioned in the setup instructions
+- **Authentication Errors**: For demonstration purposes, the app creates a demo user automatically
+
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
-# moneymap_api

@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
-const { createClient } = require('@supabase/supabase-js');
+const { createSupabaseClient, createSupabaseAdminClient } = require('./utils/supabase');
 
 // Load environment variables
 dotenv.config();
@@ -14,13 +14,20 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-// Initialize Supabase client
+// Initialize Supabase clients
 const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
 
-// Make supabase client available to all routes
+// Create a special admin client with service role key to bypass RLS
+const supabaseAdmin = createSupabaseAdminClient(supabaseUrl, supabaseServiceKey);
+
+// Create a regular client for normal operations with anon key
+const supabase = createSupabaseClient(supabaseUrl, supabaseAnonKey);
+
+// Make supabase clients available to all routes
 app.locals.supabase = supabase;
+app.locals.supabaseAdmin = supabaseAdmin;
 
 // Routes
 const incomeRoutes = require('./routes/income');

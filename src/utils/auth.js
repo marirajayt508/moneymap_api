@@ -43,6 +43,35 @@ const authenticateToken = async (req, res, next) => {
           userId = newUser.id;
           user = newUser;
           console.log('Successfully created demo user with ID:', userId);
+          
+          // Manually create a user record in the users table
+          // This is needed because the trigger might not work with RLS
+          try {
+            // Use raw SQL query with RPC to bypass RLS
+            const { error: insertUserError } = await supabaseAdmin.rpc('insert_user_bypass_rls', {
+              user_id: userId,
+              user_name: 'Demo User'
+            });
+            
+            if (insertUserError) {
+              console.error('Error creating user record with RPC:', insertUserError);
+              
+              // Fallback: Try direct insert with admin client
+              const { error: directInsertError } = await supabaseAdmin
+                .from('users')
+                .insert([{ id: userId, name: 'Demo User' }]);
+                
+              if (directInsertError) {
+                console.error('Error creating user record with direct insert:', directInsertError);
+              } else {
+                console.log('Successfully created user record with direct insert');
+              }
+            } else {
+              console.log('Successfully created user record with RPC');
+            }
+          } catch (userInsertError) {
+            console.error('Exception creating user record:', userInsertError);
+          }
         }
       } catch (createError) {
         console.error('Exception creating demo user:', createError);
@@ -52,6 +81,45 @@ const authenticateToken = async (req, res, next) => {
       user = data.users[0];
       userId = user.id;
       console.log('Using existing user with ID:', userId);
+      
+      // Check if user exists in users table
+      const { data: existingUser, error: userCheckError } = await supabaseAdmin
+        .from('users')
+        .select('id')
+        .eq('id', userId)
+        .maybeSingle();
+        
+      if (userCheckError || !existingUser) {
+        console.log('User exists in auth but not in users table, creating record');
+        
+        // Try to create user record
+        try {
+          // Use raw SQL query with RPC to bypass RLS
+          const { error: insertUserError } = await supabaseAdmin.rpc('insert_user_bypass_rls', {
+            user_id: userId,
+            user_name: user?.user_metadata?.name || 'Demo User'
+          });
+          
+          if (insertUserError) {
+            console.error('Error creating user record with RPC:', insertUserError);
+            
+            // Fallback: Try direct insert with admin client
+            const { error: directInsertError } = await supabaseAdmin
+              .from('users')
+              .insert([{ id: userId, name: user?.user_metadata?.name || 'Demo User' }]);
+              
+            if (directInsertError) {
+              console.error('Error creating user record with direct insert:', directInsertError);
+            } else {
+              console.log('Successfully created user record with direct insert');
+            }
+          } else {
+            console.log('Successfully created user record with RPC');
+          }
+        } catch (userInsertError) {
+          console.error('Exception creating user record:', userInsertError);
+        }
+      }
     }
     
     // Set the user in the request

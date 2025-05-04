@@ -89,22 +89,68 @@ router.post('/',
       } else {
       // Create new month
       // First, ensure the user exists in the users table
-      const { data: existingUser, error: userCheckError } = await supabaseAdmin
-        .from('users')
-        .select('id')
-        .eq('id', userId)
-        .maybeSingle();
+      // Use the RPC function to check if user exists
+      const { data: userExists, error: checkUserError } = await supabaseAdmin
+        .rpc('check_user_exists', { user_id: userId });
         
-      if (userCheckError || !existingUser) {
-        // User doesn't exist in the users table or error occurred, create them
-        console.log('Creating new user record for ID:', userId);
-        const { error: userInsertError } = await supabaseAdmin
+      if (checkUserError) {
+        console.error('Error checking if user exists:', checkUserError);
+        
+        // Fallback: Try direct check
+        const { data: existingUser, error: userCheckError } = await supabaseAdmin
           .from('users')
-          .insert([{ id: userId, name: req.user.user_metadata?.name || 'Demo User' }]);
+          .select('id')
+          .eq('id', userId)
+          .maybeSingle();
           
-        if (userInsertError) {
-          console.error('Error creating user record:', userInsertError);
-          throw userInsertError;
+        if (userCheckError || !existingUser) {
+          // User doesn't exist in the users table or error occurred, create them
+          console.log('Creating new user record for ID:', userId);
+          
+          // Try to use the RPC function to insert user
+          const { error: insertUserError } = await supabaseAdmin
+            .rpc('insert_user_bypass_rls', {
+              user_id: userId,
+              user_name: req.user.user_metadata?.name || 'Demo User'
+            });
+            
+          if (insertUserError) {
+            console.error('Error creating user with RPC:', insertUserError);
+            
+            // Fallback: Try direct insert
+            const { error: userInsertError } = await supabaseAdmin
+              .from('users')
+              .insert([{ id: userId, name: req.user.user_metadata?.name || 'Demo User' }]);
+              
+            if (userInsertError) {
+              console.error('Error creating user record:', userInsertError);
+              throw userInsertError;
+            }
+          }
+        }
+      } else if (!userExists) {
+        // User doesn't exist, create them
+        console.log('User does not exist, creating new user record for ID:', userId);
+        
+        // Try to use the RPC function to insert user
+        const { error: insertUserError } = await supabaseAdmin
+          .rpc('insert_user_bypass_rls', {
+            user_id: userId,
+            user_name: req.user.user_metadata?.name || 'Demo User'
+          });
+          
+        if (insertUserError) {
+          console.error('Error creating user with RPC:', insertUserError);
+          
+          // Fallback: Try direct insert
+          const { error: userInsertError } = await supabaseAdmin
+            .from('users')
+            .insert([{ id: userId, name: req.user.user_metadata?.name || 'Demo User' }]);
+            
+          if (userInsertError) {
+            console.error('Error creating user record:', userInsertError);
+            throw userInsertError;
+          }
         }
       }
       

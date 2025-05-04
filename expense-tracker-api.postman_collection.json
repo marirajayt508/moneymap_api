@@ -541,7 +541,7 @@
   "variable": [
     {
       "key": "base_url",
-      "value": "http://localhost:5001",
+      "value": "https://moneymap-1quy.onrender.com",
       "type": "string"
     },
     {
