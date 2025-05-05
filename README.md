@@ -6,7 +6,7 @@ A comprehensive expense tracking application that helps you manage your monthly 
 
 - **Income Management**: Set your monthly income
 - **Budget Categories**: Create budget categories for both spending and savings
-- **Daily Expense Tracking**: Record and track your daily expenses
+- **Daily Expense Tracking**: Record and track your daily expenses with notes
 - **Dynamic Daily Budget**: Automatically calculates your daily spending allowance
 - **Cumulative Savings**: Tracks unspent daily budget as additional savings
 - **Visual Reports**: View your financial data through interactive charts
@@ -56,10 +56,12 @@ A comprehensive expense tracking application that helps you manage your monthly 
    - `src/config/supabase-schema.sql` - Creates tables and RLS policies
    - `src/config/fix-functions.sql` - Fixes function ambiguities
    - `src/config/bypass-rls-functions.sql` - Adds functions to bypass RLS for user creation
+   - `src/config/add-notes-field.sql` - Adds notes field to daily_expenses table
 
-   Alternatively, you can run the bypass RLS functions script:
+   Alternatively, you can run the scripts:
    ```
    node apply-bypass-rls.js
+   node src/config/apply-notes-migration.js
    ```
 
 ### Running the Application
@@ -95,6 +97,7 @@ The application will be available at `http://localhost:5000`.
 
 - Navigate to the Expenses section
 - Select a date and enter the amount spent
+- Add optional notes to keep track of what the expense was for
 - The system will show you your remaining budget for the day
 - Any unspent amount is carried forward to the next day as cumulative savings
 

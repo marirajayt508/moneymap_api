@@ -114,7 +114,8 @@ router.post('/',
   [
     body('monthId').isUUID().withMessage('Valid month ID is required'),
     body('date').isDate().withMessage('Valid date is required'),
-    body('amountSpent').isFloat({ min: 0 }).withMessage('Amount spent must be a positive number')
+    body('amountSpent').isFloat({ min: 0 }).withMessage('Amount spent must be a positive number'),
+    body('notes').optional().isString().withMessage('Notes must be a string')
   ],
   async (req, res) => {
     // Validate request
@@ -124,7 +125,7 @@ router.post('/',
     }
     
     try {
-      const { monthId, date, amountSpent } = req.body;
+      const { monthId, date, amountSpent, notes } = req.body;
       const userId = req.user.id;
       const supabaseAdmin = req.app.locals.supabaseAdmin;
       
@@ -156,6 +157,7 @@ router.post('/',
           .from('daily_expenses')
           .update({ 
             amount_spent: amountSpent,
+            notes: notes,
             updated_at: new Date()
           })
           .eq('id', existingExpense.id)
@@ -186,6 +188,7 @@ router.post('/',
             date,
             amount_spent: amountSpent,
             allocated_budget: month.daily_allocation,
+            notes: notes,
             // Calculate and set these values directly instead of relying on the trigger
             cumulative_savings: cumulativeSavings,
             cumulative_budget: cumulativeBudget,
@@ -228,7 +231,8 @@ router.put('/:id',
   authenticateToken,
   [
     param('id').isUUID().withMessage('Valid expense ID is required'),
-    body('amountSpent').isFloat({ min: 0 }).withMessage('Amount spent must be a positive number')
+    body('amountSpent').isFloat({ min: 0 }).withMessage('Amount spent must be a positive number'),
+    body('notes').optional().isString().withMessage('Notes must be a string')
   ],
   async (req, res) => {
     // Validate request
@@ -239,7 +243,7 @@ router.put('/:id',
     
     try {
       const { id } = req.params;
-      const { amountSpent } = req.body;
+      const { amountSpent, notes } = req.body;
       const userId = req.user.id;
       const supabaseAdmin = req.app.locals.supabaseAdmin;
       
@@ -263,6 +267,7 @@ router.put('/:id',
         .from('daily_expenses')
         .update({ 
           amount_spent: amountSpent,
+          notes: notes,
           remaining,
           updated_at: new Date()
         })

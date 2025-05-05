@@ -403,7 +403,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"monthId\": \"{{month_id}}\",\n    \"date\": \"2025-05-01\",\n    \"amountSpent\": 100\n}"
+              "raw": "{\n    \"monthId\": \"{{month_id}}\",\n    \"date\": \"2025-05-01\",\n    \"amountSpent\": 100,\n    \"notes\": \"Grocery shopping\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/expense",
@@ -430,7 +430,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"amountSpent\": 150\n}"
+              "raw": "{\n    \"amountSpent\": 150,\n    \"notes\": \"Grocery shopping and household items\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/expense/{{expense_id}}",
