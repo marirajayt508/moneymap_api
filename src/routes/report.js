@@ -35,6 +35,27 @@ router.get('/monthly/:month/:year',
         parseFloat(rpcData.total_savings) > 0 || 
         parseFloat(rpcData.total_spent) > 0
       )) {
+      // Get daily expenses for per-day spending
+      const { data: dailyExpenses, error: dailyExpensesError } = await supabaseAdmin
+        .from('daily_expenses')
+        .select('date, amount_spent')
+        .eq('user_id', userId)
+        .eq('month_id', rpcData.month_id);
+      
+      if (dailyExpensesError) throw dailyExpensesError;
+      
+      // Calculate total per-day spending
+      const perDaySpending = dailyExpenses.reduce((acc, expense) => {
+        const date = expense.date;
+        acc[date] = parseFloat(expense.amount_spent || 0);
+        return acc;
+      }, {});
+      
+      // Calculate sum of all per-day spending
+      const totalPerDaySpending = dailyExpenses.reduce((sum, expense) => {
+        return sum + parseFloat(expense.amount_spent || 0);
+      }, 0);
+      
       // Format the response
       const report = {
         month: parseInt(month),
@@ -45,7 +66,9 @@ router.get('/monthly/:month/:year',
         totalDailyAllocation: parseFloat(rpcData.total_daily_allocation || 0),
         totalRemaining: parseFloat(rpcData.total_remaining || 0),
         extraSavings: parseFloat(rpcData.cumulative_savings || 0),
-        perdayLimit: parseFloat(rpcData.total_daily_allocation || 0) / (new Date(parseInt(year), parseInt(month), 0).getDate()) // Use actual days in month
+        perdayLimit: parseFloat(rpcData.total_daily_allocation || 0) / (new Date(parseInt(year), parseInt(month), 0).getDate()), // Use actual days in month
+        perDaySpending: perDaySpending, // Add per-day spending
+        totalPerDaySpending: totalPerDaySpending // Add sum of all per-day spending
       };
         
         return res.json(report);
@@ -75,7 +98,9 @@ router.get('/monthly/:month/:year',
           totalDailyAllocation: 0,
           totalRemaining: 0,
           extraSavings: 0,
-          perdayLimit: 0
+          perdayLimit: 0,
+          perDaySpending: {}, // Add empty per-day spending object
+          totalPerDaySpending: 0 // Add sum of all per-day spending
         });
       }
       
@@ -111,6 +136,27 @@ router.get('/monthly/:month/:year',
       
       if (expenseError) throw expenseError;
       
+      // Get daily expenses for per-day spending
+      const { data: dailyExpenses, error: dailyExpensesError } = await supabaseAdmin
+        .from('daily_expenses')
+        .select('date, amount_spent')
+        .eq('month_id', monthData.id)
+        .eq('user_id', userId);
+      
+      if (dailyExpensesError) throw dailyExpensesError;
+      
+      // Calculate total per-day spending
+      const perDaySpending = dailyExpenses.reduce((acc, expense) => {
+        const date = expense.date;
+        acc[date] = parseFloat(expense.amount_spent || 0);
+        return acc;
+      }, {});
+      
+      // Calculate sum of all per-day spending
+      const totalPerDaySpending = dailyExpenses.reduce((sum, expense) => {
+        return sum + parseFloat(expense.amount_spent || 0);
+      }, 0);
+      
       // Calculate totals
       const totalIncome = parseFloat(monthData.income) || 0;
       const totalSavings = savingsCategories.reduce((sum, cat) => sum + parseFloat(cat.amount), 0);
@@ -130,7 +176,9 @@ router.get('/monthly/:month/:year',
         totalDailyAllocation,
         totalRemaining,
         extraSavings,
-        perdayLimit
+        perdayLimit,
+        perDaySpending, // Add per-day spending
+        totalPerDaySpending // Add sum of all per-day spending
       };
       
       res.json(report);
@@ -176,7 +224,7 @@ router.get('/trend/:month/:year',
       // Get daily expenses
       const { data: expenses, error: expensesError } = await supabaseAdmin
         .from('daily_expenses')
-        .select('date, amount_spent, allocated_budget, cumulative_savings, cumulative_budget, remaining')
+        .select('date, amount_spent, allocated_budget, cumulative_savings, cumulative_budget, remaining, notes')
         .eq('month_id', monthData.id)
         .eq('user_id', userId)
         .order('date');
@@ -190,7 +238,8 @@ router.get('/trend/:month/:year',
         allocatedBudget: parseFloat(expense.allocated_budget),
         cumulativeSavings: parseFloat(expense.cumulative_savings),
         cumulativeBudget: parseFloat(expense.cumulative_budget),
-        remaining: parseFloat(expense.remaining)
+        remaining: parseFloat(expense.remaining),
+        notes: expense.notes
       }));
       
       res.json(trend);
@@ -324,17 +373,30 @@ router.get('/spending/:month/:year',
       
       if (categoriesError) throw categoriesError;
       
-      // Get total actual spending from daily expenses
-      const { data: totalSpending, error: spendingError } = await supabaseAdmin
+      // Get daily expenses with date and amount spent
+      const { data: dailyExpenses, error: spendingError } = await supabaseAdmin
         .from('daily_expenses')
-        .select('amount_spent')
+        .select('date, amount_spent')
         .eq('month_id', monthData.id)
         .eq('user_id', userId);
       
       if (spendingError) throw spendingError;
       
-      const totalActualSpending = totalSpending.reduce((sum, exp) => sum + parseFloat(exp.amount_spent), 0);
+      // Calculate per-day spending
+      const perDaySpending = dailyExpenses.reduce((acc, expense) => {
+        const date = expense.date;
+        acc[date] = parseFloat(expense.amount_spent || 0);
+        return acc;
+      }, {});
+      
+      // Calculate sum of all per-day spending
+      const totalPerDaySpending = dailyExpenses.reduce((sum, exp) => sum + parseFloat(exp.amount_spent || 0), 0);
+      
+      // Calculate total planned spending from budget categories
       const totalPlannedSpending = spendingCategories.reduce((sum, cat) => sum + parseFloat(cat.amount), 0);
+      
+      // Calculate total actual spending from budget categories (this is different from totalPerDaySpending)
+      const totalActualSpending = totalPlannedSpending; // Using planned spending as a proxy for actual spending from budget categories
       
       // Format the response
       const analysis = {
@@ -349,7 +411,11 @@ router.get('/spending/:month/:year',
         difference: totalPlannedSpending - totalActualSpending,
         spendingPercentage: monthData.income > 0 
           ? (totalActualSpending / parseFloat(monthData.income) * 100).toFixed(2)
-          : 0
+          : 0,
+        perDaySpending: perDaySpending, // Add per-day spending
+        totalPerDaySpending: totalPerDaySpending, // Sum of all per-day spending
+        plannedVsActual: totalPlannedSpending - totalActualSpending, // Difference between planned and actual spending
+        plannedSpent: totalActualSpending - totalPerDaySpending // Difference between totalActualSpending and totalPerDaySpending
       };
       
       res.json(analysis);
