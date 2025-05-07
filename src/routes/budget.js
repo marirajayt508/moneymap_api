@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { body, param, validationResult } = require('express-validator');
+const { body, param, query, validationResult } = require('express-validator');
 const { authenticateToken } = require('../utils/auth');
 
 // Get all budget categories for a month
@@ -193,6 +193,89 @@ router.delete('/:id',
       res.status(204).send();
     } catch (error) {
       console.error('Error deleting budget category:', error);
+      res.status(500).json({ message: 'Server error', error: error.message });
+    }
+  }
+);
+
+// Get all budgets for a year
+router.get('/year/:year?', 
+  authenticateToken,
+  [
+    param('year').optional().isInt().withMessage('Year must be a valid integer')
+  ],
+  async (req, res) => {
+    // Validate request
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    
+    try {
+      const userId = req.user.id;
+      const supabaseAdmin = req.app.locals.supabaseAdmin;
+      
+      // If year is not provided, use current year
+      let year = req.params.year;
+      if (!year) {
+        const currentDate = new Date();
+        year = currentDate.getFullYear();
+      }
+      
+      // First get all months for the user in the specified year
+      const { data: months, error: monthsError } = await supabaseAdmin
+        .from('months')
+        .select('id, month, year')
+        .eq('user_id', userId)
+        .eq('year', year)
+        .order('month');
+      
+      if (monthsError) throw monthsError;
+      
+      if (!months || months.length === 0) {
+        return res.json([]);
+      }
+      
+      // Get all budget categories for these months
+      const monthIds = months.map(month => month.id);
+      const { data: categories, error: categoriesError } = await supabaseAdmin
+        .from('budget_categories')
+        .select('*')
+        .in('month_id', monthIds)
+        .eq('user_id', userId)
+        .order('name');
+      
+      if (categoriesError) throw categoriesError;
+      
+      // Group categories by month
+      const budgetsByMonth = months.map(month => {
+        const monthCategories = categories.filter(cat => cat.month_id === month.id);
+        
+        // Calculate totals for this month
+        const spent = monthCategories
+          .filter(cat => cat.type === 'Spent')
+          .reduce((sum, cat) => sum + parseFloat(cat.amount), 0);
+        
+        const savings = monthCategories
+          .filter(cat => cat.type === 'Savings')
+          .reduce((sum, cat) => sum + parseFloat(cat.amount), 0);
+        
+        return {
+          monthId: month.id,
+          month: month.month,
+          year: month.year,
+          categories: monthCategories,
+          totals: {
+            spent,
+            savings,
+            total: spent + savings
+          }
+        };
+      });
+      
+      res.json(budgetsByMonth);
+    } catch (error) {
+      console.error('Error fetching budgets for year:', error);
       res.status(500).json({ message: 'Server error', error: error.message });
     }
   }

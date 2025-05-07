@@ -237,6 +237,44 @@
       "name": "Budget",
       "item": [
         {
+          "name": "Get All Budgets for Year",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/budget/year/{{year}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "budget", "year", "{{year}}"]
+            },
+            "description": "Get all budgets for a specific year. If year is not provided, it will use the current year."
+          }
+        },
+        {
+          "name": "Get All Budgets for Current Year",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/budget/year",
+              "host": ["{{base_url}}"],
+              "path": ["api", "budget", "year"]
+            },
+            "description": "Get all budgets for the current year."
+          }
+        },
+        {
           "name": "Get Budget Categories",
           "request": {
             "method": "GET",
@@ -562,6 +600,11 @@
     {
       "key": "expense_id",
       "value": "your_expense_id_here",
+      "type": "string"
+    },
+    {
+      "key": "year",
+      "value": "2025",
       "type": "string"
     },
     {

@@ -68,7 +68,8 @@ router.get('/monthly/:month/:year',
         extraSavings: parseFloat(rpcData.cumulative_savings || 0),
         perdayLimit: parseFloat(rpcData.total_daily_allocation || 0) / (new Date(parseInt(year), parseInt(month), 0).getDate()), // Use actual days in month
         perDaySpending: perDaySpending, // Add per-day spending
-        totalPerDaySpending: totalPerDaySpending // Add sum of all per-day spending
+        totalPerDaySpending: totalPerDaySpending, // Add sum of all per-day spending
+        savingGoal: parseFloat(rpcData.total_income || 0) * 0.25 // 25% of income
       };
         
         return res.json(report);
@@ -100,7 +101,8 @@ router.get('/monthly/:month/:year',
           extraSavings: 0,
           perdayLimit: 0,
           perDaySpending: {}, // Add empty per-day spending object
-          totalPerDaySpending: 0 // Add sum of all per-day spending
+          totalPerDaySpending: 0, // Add sum of all per-day spending
+          savingGoal: 0 // 25% of income (0 in this case)
         });
       }
       
@@ -178,7 +180,8 @@ router.get('/monthly/:month/:year',
         extraSavings,
         perdayLimit,
         perDaySpending, // Add per-day spending
-        totalPerDaySpending // Add sum of all per-day spending
+        totalPerDaySpending, // Add sum of all per-day spending
+        savingGoal: totalIncome * 0.25 // 25% of income
       };
       
       res.json(report);
