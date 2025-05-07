@@ -27,7 +27,13 @@ router.get('/:month/:year', authenticateToken, async (req, res) => {
       return res.status(404).json({ message: 'Month not found' });
     }
     
-    res.json(data);
+    // Calculate saving goal as 25% of income
+    const responseData = {
+      ...data,
+      savingGoal: data.income * 0.25
+    };
+    
+    res.json(responseData);
   } catch (error) {
     console.error('Error fetching income:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
