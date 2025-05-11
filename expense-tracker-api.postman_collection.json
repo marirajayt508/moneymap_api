@@ -166,6 +166,58 @@
       ]
     },
     {
+      "name": "Finance",
+      "item": [
+        {
+          "name": "Get Finance Data",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/finance/5/2025",
+              "host": ["{{base_url}}"],
+              "path": ["api", "finance", "5", "2025"]
+            },
+            "description": "Get combined income and budget data for a specific month and year"
+          }
+        },
+        {
+          "name": "Add Income and Budget",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"income\": {\n        \"month\": 5,\n        \"year\": 2025,\n        \"amount\": 50000\n    },\n    \"budgets\": [\n        {\n            \"name\": \"Rent\",\n            \"amount\": 7100,\n            \"type\": \"Spent\"\n        },\n        {\n            \"name\": \"Groceries\",\n            \"amount\": 5000,\n            \"type\": \"Spent\"\n        },\n        {\n            \"name\": \"Emergency Fund\",\n            \"amount\": 10000,\n            \"type\": \"Savings\"\n        }\n    ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/finance",
+              "host": ["{{base_url}}"],
+              "path": ["api", "finance"]
+            },
+            "description": "Add or update income and budget categories in a single request"
+          }
+        }
+      ]
+    },
+    {
       "name": "Income",
       "item": [
         {

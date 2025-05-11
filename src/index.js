@@ -34,11 +34,13 @@ const incomeRoutes = require('./routes/income');
 const budgetRoutes = require('./routes/budget');
 const expenseRoutes = require('./routes/expense');
 const reportRoutes = require('./routes/report');
+const financeRoutes = require('./routes/finance');
 
 app.use('/api/income', incomeRoutes);
 app.use('/api/budget', budgetRoutes);
 app.use('/api/expense', expenseRoutes);
 app.use('/api/report', reportRoutes);
+app.use('/api/finance', financeRoutes);
 
 // Root route
 app.get('/', (req, res) => {
